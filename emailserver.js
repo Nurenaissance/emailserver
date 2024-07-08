@@ -1,10 +1,11 @@
-const express = require('express');
-const nodemailer = require('nodemailer');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const Imap = require('imap');
-const { simpleParser } = require('mailparser');
-const imaps = require('imap-simple');
+import express from 'express';
+import nodemailer from 'nodemailer';
+import bodyParser from 'body-parser';
+import cors from 'cors';
+import Imap from 'imap';
+import { simpleParser } from 'mailparser';
+import imaps from 'imap-simple';
+
 
 const app = express();
 const port = 3001;
