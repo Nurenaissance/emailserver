@@ -5,7 +5,7 @@ import cors from 'cors';
 import Imap from 'imap';
 import { simpleParser } from 'mailparser';
 import imaps from 'imap-simple';
-const { v4: uuidv4 } = require('uuid'); 
+import { v4 as uuidv4 } from 'uuid';
 
 
 const app = express();
