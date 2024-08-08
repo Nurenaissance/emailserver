@@ -5,6 +5,7 @@ import cors from 'cors';
 import Imap from 'imap';
 import { simpleParser } from 'mailparser';
 import imaps from 'imap-simple';
+const { v4: uuidv4 } = require('uuid'); 
 
 
 const app = express();
@@ -89,6 +90,7 @@ app.post('/receive-emails', async (req, res) => {
           const parsedBody = body && body.body ? body.body : 'No Content';
   
           return {
+            id: uuidv4(),
             from: parsedHeader.from,
             subject: parsedHeader.subject,
             text: parsedBody,
