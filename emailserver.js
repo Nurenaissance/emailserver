@@ -41,7 +41,24 @@ app.post('/send-email', async (req, res) => {
     res.status(500).json({ message: 'Error sending email', error });
   }
 });
+function extractUniqueId(email) {
+  // Use a regular expression to extract the text before "Content-Type"
+  const contentTypePattern = /Content-Type/;
+  
+  // Get the index of "Content-Type"
+  const contentTypeIndex = email.text.search(contentTypePattern);
+  
+  // If "Content-Type" is found, extract the unique part
+  if (contentTypeIndex !== -1) {
+      // Extract the unique identifier from the text
+      const uniquePart = email.text.substring(0, contentTypeIndex).trim();
+      // Optionally, you can hash the unique part to ensure it is unique
+      return uniquePart; // You can return a hashed version for uniqueness if needed
+  }
 
+  // Fallback if "Content-Type" is not found
+  return email.text; // Return the entire text as a fallback
+}
 app.post('/receive-emails', async (req, res) => {
     const { imapUser, imapPass,host,port } = req.body;
   
@@ -88,9 +105,9 @@ app.post('/receive-emails', async (req, res) => {
               };
   
           const parsedBody = body && body.body ? body.body : 'No Content';
-  
+          const uniqueId = extractUniqueId({ text: parsedBody });
           return {
-            id: uuidv4(),
+            id: uniqueId,
             from: parsedHeader.from,
             subject: parsedHeader.subject,
             text: parsedBody,
