@@ -16,7 +16,7 @@ app.use(cors());
 
 app.post('/send-email', async (req, res) => {
   const { smtpUser, smtpPass, to, subject, text , host, port} = req.body;
-
+  
   let transporter = nodemailer.createTransport({
     host: host, // Hostinger's SMTP server
     port: port, // Typically 465 for secure connections
@@ -33,11 +33,15 @@ app.post('/send-email', async (req, res) => {
     subject: subject, // Subject line
     text: text, // Plain text body
   };
+  console.log('Transporter and mail options configured. Attempting to send email...');
 
+ 
   try {
     let info = await transporter.sendMail(mailOptions);
+    console.log('Email sent successfully:', info);
     res.json({ message: 'Email sent', info });
   } catch (error) {
+    console.error('Error sending email:', error);
     res.status(500).json({ message: 'Error sending email', error });
   }
 });
@@ -61,14 +65,15 @@ function extractUniqueId(email) {
 }
 app.post('/receive-emails', async (req, res) => {
     const { imapUser, imapPass,host,port } = req.body;
-  
+   
     const config = {
       imap: {
         user: imapUser,
         password: imapPass,
         host: host,
-        port: port,
+        port: port, 
         tls: true,
+        tlsOptions: { rejectUnauthorized: false },
         authTimeout: 10000, // Increase to 10 seconds or more
         timeout: 30000, // Increase the overall timeout to 30 seconds or more
       },
@@ -78,10 +83,20 @@ app.post('/receive-emails', async (req, res) => {
       const connection = await imaps.connect({ imap: config.imap });
       await connection.openBox('INBOX');
   
-      const searchCriteria = [
-        'UNSEEN',
-       
-      ];
+      const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    // Convert to the format that IMAP expects: "DD-MMM-YYYY"
+    const formattedDate = oneWeekAgo.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    }).replace(/ /g, '-');
+
+    const searchCriteria = [
+      'UNSEEN',
+      ['SINCE', formattedDate],  // Filter emails since one week ago
+    ];
       const fetchOptions = {
         bodies: ['HEADER', 'TEXT'],
         struct: true,
