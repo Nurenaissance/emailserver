@@ -15,7 +15,7 @@ app.use(bodyParser.json());
 app.use(cors());
 
 app.post('/send-email', async (req, res) => {
-  const { smtpUser, smtpPass, to, subject, text , host, port} = req.body;
+  const { smtpUser, smtpPass, to, subject, text , host, html, port} = req.body;
   
   let transporter = nodemailer.createTransport({
     host: host, // Hostinger's SMTP server
@@ -32,6 +32,11 @@ app.post('/send-email', async (req, res) => {
     to: to, // List of receivers
     subject: subject, // Subject line
     text: text, // Plain text body
+    html: html, // HTML body
+    attachments: req.files ? req.files.map(file => ({
+      filename: file.originalname,
+      path: file.path
+    })) : []
   };
   console.log('Transporter and mail options configured. Attempting to send email...');
 
@@ -63,6 +68,7 @@ function extractUniqueId(email) {
   // Fallback if "Content-Type" is not found
   return email.text; // Return the entire text as a fallback
 }
+
 app.post('/receive-emails', async (req, res) => {
     const { imapUser, imapPass,host,port } = req.body;
    
@@ -136,6 +142,56 @@ app.post('/receive-emails', async (req, res) => {
       console.error('Error receiving emails:', error);
       res.status(500).json({ message: 'Error receiving emails', error });
     }
+  });
+
+  app.post('/send-mass-email', async (req, res) => {
+    const { smtpUser, smtpPass, recipients, subject, text, html, host, port } = req.body;
+  
+    let transporter = nodemailer.createTransport({
+      host: host, // SMTP server
+      port: port, // Typically 465 for secure connections
+      secure: true, // Use SSL
+      auth: {
+        user: smtpUser, // Your email
+        pass: smtpPass, // Your email password
+      },
+    });
+  
+    const sendEmail = async (to) => {
+      let mailOptions = {
+        from: smtpUser,
+        to: to,
+        subject: subject,
+        text: text,
+        html: html,
+      };
+  
+      try {
+        let info = await transporter.sendMail(mailOptions);
+        console.log(`Email sent to ${to}:`, info);
+        return { to, status: 'success', info };
+      } catch (error) {
+        console.error(`Error sending email to ${to}:`, error);
+        return { to, status: 'error', error };
+      }
+    };
+  
+    // Send emails in batches with a delay to avoid spamming
+    const batchSize = 10; // Adjust as needed
+    const delayBetweenBatches = 2000; // 2 seconds delay between batches
+    let results = [];
+  
+    for (let i = 0; i < recipients.length; i += batchSize) {
+      const batch = recipients.slice(i, i + batchSize);
+      const batchResults = await Promise.all(batch.map(sendEmail));
+      results = results.concat(batchResults);
+  
+      if (i + batchSize < recipients.length) {
+        await new Promise((resolve) => setTimeout(resolve, delayBetweenBatches));
+      }
+    }
+  
+    res.json({ message: 'Mass email operation completed', results });
   });
 
 app.listen(port, () => {
