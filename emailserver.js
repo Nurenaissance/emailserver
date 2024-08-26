@@ -15,32 +15,29 @@ app.use(bodyParser.json());
 app.use(cors());
 
 app.post('/send-email', async (req, res) => {
-  const { smtpUser, smtpPass, to, subject, text , host, html, port} = req.body;
+  const { smtpUser, smtpPass, to, subject, text, html, host, port, attachments } = req.body;
   
   let transporter = nodemailer.createTransport({
-    host: host, // Hostinger's SMTP server
-    port: port, // Typically 465 for secure connections
-    secure: true, // Use SSL
+    host: host,
+    port: port,
+    secure: true,
     auth: {
-      user: smtpUser, // Your Hostinger email
-      pass: smtpPass, // Your Hostinger email password
+      user: smtpUser,
+      pass: smtpPass,
     },
   });
 
   let mailOptions = {
-    from: smtpUser, // Sender address
-    to: to, // List of receivers
-    subject: subject, // Subject line
-    text: text, // Plain text body
-    html: html, // HTML body
-    attachments: req.files ? req.files.map(file => ({
-      filename: file.originalname,
-      path: file.path
-    })) : []
+    from: smtpUser,
+    to: to,
+    subject: subject,
+    text: text,
+    html: html,
+    attachments: attachments || []
   };
+
   console.log('Transporter and mail options configured. Attempting to send email...');
 
- 
   try {
     let info = await transporter.sendMail(mailOptions);
     console.log('Email sent successfully:', info);
